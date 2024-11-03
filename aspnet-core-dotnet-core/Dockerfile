@@ -7,7 +7,7 @@ COPY /aspnet-core-dotnet-core/*.csproj ./
 RUN dotnet restore
 
 # Copy the rest of the application code
-COPY /aspnet-core-dotnet-core/. ./
+COPY . ./
 
 # Build the application
 RUN dotnet publish -c Release -o out
@@ -19,3 +19,6 @@ COPY --from=build /app/out ./
 
 # Run command
 ENTRYPOINT ["dotnet", "aspnet-core-dotnet-core.dll"]
+
+
+# COPY /aspnet-core-dotnet-core/. ./:
