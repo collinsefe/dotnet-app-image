@@ -1,8 +1,21 @@
-FROM mcr.microsoft.com/dotnet/core/aspnet:2.2-stretch-slim
+# Stage 1: Build the application
+FROM mcr.microsoft.com/dotnet/core/sdk:2.2 AS build
 WORKDIR /app
 
-# Copy the published web app
-COPY . /app
+# Copy the csproj and restore any dependencies (via NuGet)
+COPY /aspnet-core-dotnet-core/*.csproj ./
+RUN dotnet restore
+
+# Copy the rest of the application code
+COPY /aspnet-core-dotnet-core/. ./
+
+# Build the application
+RUN dotnet publish -c Release -o out
+
+# Stage 2: Run the application
+FROM mcr.microsoft.com/dotnet/core/aspnet:2.2-stretch-slim
+WORKDIR /app
+COPY --from=build /app/out ./
 
 # Run command
 ENTRYPOINT ["dotnet", "aspnet-core-dotnet-core.dll"]
