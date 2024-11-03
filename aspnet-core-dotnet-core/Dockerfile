@@ -3,7 +3,9 @@ FROM mcr.microsoft.com/dotnet/core/sdk:2.2 AS build
 WORKDIR /app
 
 # Copy the csproj and restore any dependencies (via NuGet)
-COPY /aspnet-core-dotnet-core/*.csproj ./
+# COPY /aspnet-core-dotnet-core/*.csproj ./
+
+COPY ./*.csproj ./
 RUN dotnet restore
 
 # Copy the rest of the application code
