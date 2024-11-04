@@ -1,67 +1,47 @@
 pipeline {
     agent any
-    environment {
-        DOCKER_HUB_USERNAME = 'collinsefe'
-        IMAGE_NAME = "${DOCKER_HUB_USERNAME}/dotnet-app-image"
-        TAG = 'latest'
-    }
+
     stages {
-        stage('Prepare') {
+        stage('Prepare Environment') {
             steps {
                 script {
-                    dir('aspnet-core-dotnet-core') {
-                        sh 'ls -la'
-                    }
+                    // Define the environment and port based on the branch name
+                    env.ENVIRONMENT = (env.BRANCH_NAME == 'master') ? 'prod' : 'dev'
+                    env.PORT = (env.BRANCH_NAME == 'master') ? '8082' : '8081' 
                 }
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build Application') {
             steps {
-                script {
-                    try {
-                        echo "Building Docker image..."
-                        sh "sudo docker build -t ${IMAGE_NAME}:${TAG} aspnet-core-dotnet-core"
-                    } catch (Exception e) {
-                        error 'Docker build failed. Exiting...'
-                    }
-                }
+                echo "Building the application for the ${env.ENVIRONMENT} environment..."
+                sh 'mvn clean install'
             }
         }
 
-         stage('Login to Docker Hub') {
+        stage('Run Application') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'collinsefe-dockerhub', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
-                    sh "echo ${DOCKER_HUB_PASSWORD} | sudo docker login -u ${DOCKER_HUB_USERNAME} --password-stdin"
-                }
+                echo "Running the Spring Boot application on port ${env.PORT} in ${env.ENVIRONMENT} environment..."
+                sh """
+                nohup java -jar target/*.jar --server.port=${env.PORT} > application.log 2>&1 &
+                echo "Application started in detached mode with PID: \$!"
+                """
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Test Application') {
             steps {
-                script {
-                    try {
-                        echo "Pushing Docker image to Docker Hub..."
-                        sh "sudo docker push ${IMAGE_NAME}:${TAG}"
-                    } catch (Exception e) {
-                        error 'Docker push failed. Exiting...'
-                    }
-                }
-            }
-        }
-
-        stage('Clean Up Local Docker Image') {
-            steps {
-                script {
-                    echo "Cleaning up local Docker image..."
-                    sh "sudo docker rmi -f ${IMAGE_NAME}:${TAG}"
-                }
-            }
+                echo "Testing the API in the ${env.ENVIRONMENT} environment..."
+                sh """
+                curl -v -u greg:turnquist http://localhost:${env.PORT}/api/employees/3
+                """
+            }                       
         }
     }
+
     post {
-        success {
-            echo "Docker image has been pushed successfully!"
+        always {
+            echo "Jenkins pipeline completed. The application is still running."
         }
     }
 }
