@@ -9,7 +9,6 @@ pipeline {
         stage('Prepare') {
             steps {
                 script {
-                    // Navigate to the directory containing the Dockerfile
                     dir('aspnet-core-dotnet-core') {
                         sh 'ls -la'
                     }
@@ -30,17 +29,10 @@ pipeline {
             }
         }
 
-        stage('Login to Docker Hub') {
+         stage('Login to Docker Hub') {
             steps {
-                withCredentials([string(credentialsId: 'collinsefe-dockerhub', variable: 'DOCKER_HUB_PASSWORD')]) {
-                    script {
-                        try {
-                            echo "Logging in to Docker Hub..."
-                            sh "echo ${DOCKER_HUB_PASSWORD} | sudo docker login -u ${DOCKER_HUB_USERNAME} --password-stdin"
-                        } catch (Exception e) {
-                            error 'Docker login failed. Exiting...'
-                        }
-                    }
+                withCredentials([usernamePassword(credentialsId: 'collinsefe-dockerhub', usernameVariable: 'DOCKER_HUB_USERNAME', passwordVariable: 'DOCKER_HUB_PASSWORD')]) {
+                    sh "echo ${DOCKER_HUB_PASSWORD} | sudo docker login -u ${DOCKER_HUB_USERNAME} --password-stdin"
                 }
             }
         }
