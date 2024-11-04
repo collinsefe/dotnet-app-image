@@ -54,7 +54,7 @@ pipeline {
             steps {
                 script {
                     echo "Cleaning up local Docker image..."
-                    sh "sudo docker rmi ${IMAGE_NAME}:${TAG}"
+                    sh "sudo docker rmi -f ${IMAGE_NAME}:${TAG}"
                 }
             }
         }
