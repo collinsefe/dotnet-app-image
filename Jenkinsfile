@@ -14,7 +14,7 @@ pipeline {
         ECS_SERVICE_NAME = 'app-service-test'
         ECS_TASK_DEFINITION = 'app-task-family-test' 
         APP_ENDPOINT = "app-alb-test-1824026980.eu-west-2.elb.amazonaws.com"
-        CONTAINER_NAME = "app-task-dev"
+        CONTAINER_NAME = "app-task-test"
     }
 
     stages {
