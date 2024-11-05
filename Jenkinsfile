@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_HUB_CREDENTIALS = 'collinsefe-dockerhub' 
         DOCKER_IMAGE = 'collinsefe/dotnet-app-image'
-        DOCKER_TAG = 'latest'
+        DOCKER_TAG = 'test'
         PORT = 8085
         APP_DIR = 'aspnet-core-dotnet-core' 
     }
