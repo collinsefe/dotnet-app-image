@@ -19,10 +19,7 @@ pipeline {
                 }
             }
         }
-    }
-    
-
-    stages {
+        
         stage('Clean-up Docker') {
             steps {
                 echo 'Removing existing containers and images...'
