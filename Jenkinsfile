@@ -8,12 +8,12 @@ pipeline {
         ECR_REPO_NAME = 'cap-gem-app-test'
         DOCKER_IMAGE = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
         DOCKER_TAG = 'latest'
-        PORT = 8085
+        PORT = 8084
         APP_DIR = 'aspnet-core-dotnet-core'
         ECS_CLUSTER_NAME = 'app-cluster-test'
         ECS_SERVICE_NAME = 'app-service-test'
-        ECS_TASK_DEFINITION = 'app-task-test'
-        APP_ENDPOINT = "http://demo-app-alb-173668491.eu-west-2.elb.amazonaws.com"
+        ECS_TASK_DEFINITION = 'app-task-family-test' 
+        APP_ENDPOINT = "app-alb-test-1824026980.eu-west-2.elb.amazonaws.com"
     }
 
     stages {
@@ -61,7 +61,7 @@ pipeline {
                         aws ecs register-task-definition \
                           --family ${ECS_TASK_DEFINITION} \
                           --container-definitions '[{
-                            "name": "${ECS_TASK_DEFINITION}",
+                            "name": "cap-gem-app",  // Update to your actual container name
                             "image": "${DOCKER_IMAGE}:${DOCKER_TAG}",
                             "essential": true,
                             "memory": 512,
@@ -73,11 +73,12 @@ pipeline {
                           }]' || exit 1
                         """
 
-                        // Update ECS service
+                        // Update ECS service with the new task definition
                         sh """
                         aws ecs update-service \
                           --cluster ${ECS_CLUSTER_NAME} \
                           --service ${ECS_SERVICE_NAME} \
+                          --task-definition ${ECS_TASK_DEFINITION} \
                           --force-new-deployment || exit 1
                         """
                     }
@@ -92,12 +93,29 @@ pipeline {
                 sleep(20)  // Wait for the service to become available
 
                 script {
-                    def response = sh(script: "curl -s -o /dev/null -w '%{http_code}' ${APP_ENDPOINT}", returnStdout: true).trim()
+                    def response = sh(script: "curl -s -o /test/null -w '%{http_code}' ${APP_ENDPOINT}", returnStdout: true).trim()
                     if (response == '200') {
                         echo 'Application is running and responded with HTTP 200 OK!'
                     } else {
                         error "Application test failed! Endpoint responded with HTTP ${response}"
                     }
+                }
+            }
+        }
+
+        stage('Verify Monitoring') {
+            steps {
+                script {
+                    echo 'Verifying CloudWatch Logs...'
+                    sh "aws logs describe-log-groups --log-group-name-prefix /ecs/${ECS_SERVICE_NAME}"
+
+                    echo 'Checking ECS Service Metrics...'
+                    sh """
+                        aws cloudwatch get-metric-statistics --metric-name CPUUtilization \
+                        --namespace AWS/ECS --period 60 --statistics Average \
+                        --dimensions Name=ServiceName,Value=${ECS_SERVICE_NAME} Name=ClusterName,Value=${ECS_CLUSTER_NAME} \
+                        --start-time \$(date -u -d '10 minutes ago' +%Y-%m-%dT%H:%M:%SZ) --end-time \$(date -u +%Y-%m-%dT%H:%M:%SZ)
+                    """
                 }
             }
         }
