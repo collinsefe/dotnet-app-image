@@ -1,47 +1,63 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_HUB_CREDENTIALS = 'collinsefe-dockerhub' 
+        DOCKER_IMAGE = 'collinsefe/dotnet-app-image'
+        DOCKER_TAG = 'latest'
+        PORT = 8084
+        APP_DIR = 'aspnet-core-dotnet-core' 
+    }
+
     stages {
-        stage('Prepare Environment') {
+        stage('Change Directory') {
             steps {
-                script {
-                    // Define the environment and port based on the branch name
-                    env.ENVIRONMENT = (env.BRANCH_NAME == 'master') ? 'prod' : 'dev'
-                    env.PORT = (env.BRANCH_NAME == 'master') ? '8082' : '8081' 
+                echo "Moving to the application directory: ${APP_DIR}..."
+                dir(APP_DIR) {
+                    echo 'Current directory:'
+                    sh 'pwd' 
                 }
             }
         }
 
-        stage('Build Application') {
+    stages {
+        stage('Clean-up Docker') {
             steps {
-                echo "Building the application for the ${env.ENVIRONMENT} environment..."
-                sh 'mvn clean install'
+                echo 'Removing existing containers and images...'
+                sh 'sudo docker rm -f $(sudo docker ps -a -q) || true'
+                sh 'sudo docker image rm -f $(sudo docker images -a -q) || true'
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                echo 'Building Docker image...'
+                sh 'sudo docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .'
             }
         }
 
-        stage('Run Application') {
+        stage('Push Docker Image') {
             steps {
-                echo "Running the Spring Boot application on port ${env.PORT} in ${env.ENVIRONMENT} environment..."
-                sh """
-                nohup java -jar target/*.jar --server.port=${env.PORT} > application.log 2>&1 &
-                echo "Application started in detached mode with PID: \$!"
-                """
+                echo 'Logging in to Docker Hub and pushing the image...'
+                withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDENTIALS}", passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                    sh 'echo "$DOCKER_PASSWORD" | sudo docker login -u "$DOCKER_USERNAME" --password-stdin'
+                }
+                sh 'sudo docker push ${DOCKER_IMAGE}:${DOCKER_TAG}'
             }
         }
 
-        stage('Test Application') {
+        stage('Run Docker Container') {
             steps {
-                echo "Testing the API in the ${env.ENVIRONMENT} environment..."
-                sh """
-                curl -v -u greg:turnquist http://localhost:${env.PORT}/api/employees/3
-                """
-            }                       
+                echo "Running the Docker container on port ${PORT}..."
+                sh "sudo docker run -d -p ${PORT}:80 ${DOCKER_IMAGE}:${DOCKER_TAG}"
+            }
         }
     }
 
     post {
         always {
-            echo "Jenkins pipeline completed. The application is still running."
+            echo 'Pipeline completed. The Docker container is running.'
+            # sh 'sudo docker ps -a' 
         }
     }
 }
