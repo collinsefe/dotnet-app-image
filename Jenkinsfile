@@ -13,7 +13,7 @@ pipeline {
         stage('Clean-up Docker') {
             steps {
                 echo "Moving to the application directory: ${APP_DIR}..."
-                dir(APP_DIR) {
+                dir(APP_DIR) 
                 echo 'Current directory:'
                 sh 'pwd' 
                 echo 'Removing existing containers and images...'
