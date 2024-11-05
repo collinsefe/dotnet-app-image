@@ -11,7 +11,7 @@ pipeline {
         PORT = 8084
         APP_DIR = 'aspnet-core-dotnet-core'
         ECS_CLUSTER_NAME = 'demo-app-cluster'
-        ECS_SERVICE_NAME = 'collins-cap-demo-app'
+        ECS_SERVICE_NAME = 'demo-app-service'
         ECS_TASK_DEFINITION = 'demo-app-task'
         APP_ENDPOINT = "http://demo-app-alb-173668491.eu-west-2.elb.amazonaws.com"
     }
