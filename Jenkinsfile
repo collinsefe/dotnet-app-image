@@ -71,13 +71,6 @@ pipeline {
                             }]
                           }]' || exit 1
                         """
-                        sh """
-                        aws ecs update-service \
-                          --cluster ${ECS_CLUSTER_NAME} \
-                          --service ${ECS_SERVICE_NAME} \
-                          --task-definition ${ECS_TASK_DEFINITION} \
-                          --force-new-deployment || exit 1
-                        """
                     }
                 }
             }
