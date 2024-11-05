@@ -1,0 +1,33 @@
+pipeline {
+    agent any
+
+    stages {
+         stage('Clean-up Docker') {
+            steps {
+                echo 'Remove existing containers and images...'
+                sh 'sudo docker rm -f $(sudo docker ps -a -q)'
+                sh 'sudo docker image remove -f $(sudo docker images -a -q)'
+            }
+        }
+        
+        stage('Pull Docker Image') {
+            steps {
+                echo 'Pulling the Docker image...'
+                sh 'sudo docker pull collinsefe/dotnet-app-image'
+            }
+        }
+
+        stage('Run Docker Container') {
+            steps {
+                echo "Running the Docker container on port 8084..."
+                sh "sudo docker run -d -p 8084:80 collinsefe/dotnet-app-image"
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline completed. The Docker container is running.'
+        }
+    }
+}
