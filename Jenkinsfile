@@ -12,27 +12,32 @@ pipeline {
     stages {
         stage('Clean-up Docker') {
             steps {
-                dir(APP_DIR) 
-                echo 'Removing existing containers and images...'
-                sh 'sudo docker rm -f $(sudo docker ps -a -q) || true'
-                sh 'sudo docker image rm -f $(sudo docker images -a -q) || true'
+                dir(APP_DIR) { 
+                    echo 'Removing existing containers and images...'
+                    sh 'sudo docker rm -f $(sudo docker ps -a -q) || true'
+                    sh 'sudo docker image rm -f $(sudo docker images -a -q) || true'
+                }
             }
         }
         
         stage('Build Docker Image') {
             steps {
-                echo 'Building Docker image...'
-                sh 'sudo docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .'
+                dir(APP_DIR) { 
+                    echo 'Building Docker image...'
+                    sh 'sudo docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .'
+                }
             }
         }
 
         stage('Push Docker Image') {
             steps {
                 echo 'Logging in to Docker Hub and pushing the image...'
-                withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDENTIALS}", passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                    sh 'echo "$DOCKER_PASSWORD" | sudo docker login -u "$DOCKER_USERNAME" --password-stdin'
+                dir(APP_DIR) { 
+                    withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDENTIALS}", passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        sh 'echo "$DOCKER_PASSWORD" | sudo docker login -u "$DOCKER_USERNAME" --password-stdin'
+                    }
+                    sh 'sudo docker push ${DOCKER_IMAGE}:${DOCKER_TAG}'
                 }
-                sh 'sudo docker push ${DOCKER_IMAGE}:${DOCKER_TAG}'
             }
         }
 
