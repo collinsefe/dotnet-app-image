@@ -14,6 +14,7 @@ pipeline {
         ECS_SERVICE_NAME = 'app-service-dev'
         ECS_TASK_DEFINITION = 'app-task-family-dev' 
         APP_ENDPOINT = "app-alb-dev-1102088767.eu-west-2.elb.amazonaws.com"
+        CONTAINER_NAME = "app-task-test"
     }
 
     stages {
@@ -55,13 +56,11 @@ pipeline {
                 script {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS}"]]) {
                         echo 'Deploying to ECS...'
-
-                        // Register ECS task definition
                         sh """
                         aws ecs register-task-definition \
                           --family ${ECS_TASK_DEFINITION} \
                           --container-definitions '[{
-                            "name": "cap-gem-app",  // Update to your actual container name
+                            "name": "${CONTAINER_NAME}",  
                             "image": "${DOCKER_IMAGE}:${DOCKER_TAG}",
                             "essential": true,
                             "memory": 512,
@@ -72,8 +71,6 @@ pipeline {
                             }]
                           }]' || exit 1
                         """
-
-                        // Update ECS service with the new task definition
                         sh """
                         aws ecs update-service \
                           --cluster ${ECS_CLUSTER_NAME} \
