@@ -12,10 +12,7 @@ pipeline {
     stages {
         stage('Clean-up Docker') {
             steps {
-                echo "Moving to the application directory: ${APP_DIR}..."
                 dir(APP_DIR) 
-                echo 'Current directory:'
-                sh 'pwd' 
                 echo 'Removing existing containers and images...'
                 sh 'sudo docker rm -f $(sudo docker ps -a -q) || true'
                 sh 'sudo docker image rm -f $(sudo docker images -a -q) || true'
