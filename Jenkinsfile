@@ -10,15 +10,21 @@ pipeline {
         DOCKER_TAG = 'latest'
         PORT = 8084
         APP_DIR = 'aspnet-core-dotnet-core'
+        ECS_CLUSTER_NAME = 'demo-app-cluster'
+        ECS_SERVICE_NAME = 'collins-cap-demo-app'
+        ECS_TASK_DEFINITION = 'demo-app-task'
+        APP_ENDPOINT = "http://demo-app-alb-173668491.eu-west-2.elb.amazonaws.com"
     }
 
     stages {
         stage('Clean-up Docker') {
             steps {
                 dir(APP_DIR) {
-                    echo 'Moving to APP directory...'
+                    echo 'Clean-up Docker Images...'
                     sh 'pwd'
                     sh 'ls -la'
+                    sh 'sudo docker rm -f $(sudo docker ps -a -q) || true'
+                    sh 'sudo docker image rm -f $(sudo docker images -a -q) || true'
                 }
             }
         }
@@ -37,10 +43,8 @@ pipeline {
                 echo 'Logging in to Amazon ECR and pushing the image...'
                 dir(APP_DIR) {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS}"]]) {
-                        // Login to ECR
                         sh "aws ecr get-login-password --region ${AWS_REGION} | sudo docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-                    }
-                    // Push the Docker image to ECR
+                    }            
                     sh "sudo docker push ${DOCKER_IMAGE}:${DOCKER_TAG} || exit 1"
                 }
             }
@@ -55,16 +59,16 @@ pipeline {
                         // Register ECS task definition
                         sh """
                         aws ecs register-task-definition \
-                          --family ${ECS_REPO_NAME} \
+                          --family ${ECS_TASK_DEFINITION} \
                           --container-definitions '[{
-                            "name": "container",
+                            "name": "${ECS_TASK_DEFINITION}",
                             "image": "${DOCKER_IMAGE}:${DOCKER_TAG}",
                             "essential": true,
                             "memory": 512,
                             "cpu": 256,
                             "portMappings": [{
                               "containerPort": 80,
-                              "hostPort": ${PORT}
+                              "hostPort": 0
                             }]
                           }]' || exit 1
                         """
@@ -85,7 +89,7 @@ pipeline {
             steps {
                 echo "Testing if the application is running on ${APP_ENDPOINT}..."
 
-                sleep(20)
+                sleep(20)  // Wait for the service to become available
 
                 script {
                     def response = sh(script: "curl -s -o /dev/null -w '%{http_code}' ${APP_ENDPOINT}", returnStdout: true).trim()
@@ -101,10 +105,10 @@ pipeline {
 
     post {
         always {
-            echo 'Pipeline completed. Checking Docker containers and ECS services...'
-             withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS}"]]) {
-            sh 'aws ecs list-services --cluster ${ECS_CLUSTER_NAME} || true'
-             }
+            echo 'Pipeline completed. Checking ECS services...'
+            withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS}"]]) {
+                sh "aws ecs list-services --cluster ${ECS_CLUSTER_NAME} || true"
+            }
         }
     }
 }
