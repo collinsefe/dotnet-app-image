@@ -9,7 +9,7 @@ pipeline {
         APP_DIR = 'aspnet-core-dotnet-core'
         AWS_CREDENTIALS = 'aws-credentials' 
         ECS_CLUSTER_NAME = 'demo-app-cluster' 
-        ECS_SERVICE_NAME = 'collins-cap-demo-app' 
+        ECS_SERVICE_NAME = 'demo-app-service' 
         ECS_TASK_DEFINITION = 'demo-app-task' 
     }
 
