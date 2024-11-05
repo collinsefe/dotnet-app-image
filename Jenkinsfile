@@ -2,15 +2,14 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_CREDENTIALS = 'collinsefe-dockerhub'
-        DOCKER_IMAGE = 'collinsefe/dotnet-app-image'
+        AWS_CREDENTIALS = 'aws-credentials' 
+        AWS_ACCOUNT_ID = '684361860346' 
+        AWS_REGION = 'eu-west-2'
+        ECR_REPO_NAME = 'cap-demo-app'
+        DOCKER_IMAGE = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
         DOCKER_TAG = 'latest'
         PORT = 8084
         APP_DIR = 'aspnet-core-dotnet-core'
-        AWS_CREDENTIALS = 'aws-credentials' 
-        ECS_CLUSTER_NAME = 'demo-app-cluster' 
-        ECS_SERVICE_NAME = 'demo-app-service' 
-        ECS_TASK_DEFINITION = 'demo-app-task' 
     }
 
     stages {
@@ -20,8 +19,6 @@ pipeline {
                     echo 'Moving to APP directory...'
                     sh 'pwd'
                     sh 'ls -la'
-                    sh 'sudo docker rm -f $(sudo docker ps -a -q) || true'
-                    sh 'sudo docker image rm -f $(sudo docker images -a -q) || true'
                 }
             }
         }
@@ -30,19 +27,21 @@ pipeline {
             steps {
                 dir(APP_DIR) {
                     echo 'Building Docker image...'
-                    sh 'sudo docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} . || exit 1'
+                    sh "sudo docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} . || exit 1"
                 }
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Push Docker Image to ECR') {
             steps {
-                echo 'Logging in to Docker Hub and pushing the image...'
+                echo 'Logging in to Amazon ECR and pushing the image...'
                 dir(APP_DIR) {
-                    withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDENTIALS}", passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                        sh 'echo "$DOCKER_PASSWORD" | sudo docker login -u "$DOCKER_USERNAME" --password-stdin || exit 1'
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS}"]]) {
+                        // Login to ECR
+                        sh "aws ecr get-login-password --region ${AWS_REGION} | sudo docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
                     }
-                    sh 'sudo docker push ${DOCKER_IMAGE}:${DOCKER_TAG} || exit 1'
+                    // Push the Docker image to ECR
+                    sh "sudo docker push ${DOCKER_IMAGE}:${DOCKER_TAG} || exit 1"
                 }
             }
         }
@@ -53,11 +52,10 @@ pipeline {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS}"]]) {
                         echo 'Deploying to ECS...'
 
-                        sh 'aws --version || exit 1'
-                        
+                        // Register ECS task definition
                         sh """
                         aws ecs register-task-definition \
-                          --family ${ECS_TASK_DEFINITION} \
+                          --family ${ECS_REPO_NAME} \
                           --container-definitions '[{
                             "name": "container",
                             "image": "${DOCKER_IMAGE}:${DOCKER_TAG}",
@@ -66,7 +64,7 @@ pipeline {
                             "cpu": 256,
                             "portMappings": [{
                               "containerPort": 80,
-                              "hostPort": 8084
+                              "hostPort": ${PORT}
                             }]
                           }]' || exit 1
                         """
@@ -82,13 +80,31 @@ pipeline {
                 }
             }
         }
+        
+        stage('Test Application') {
+            steps {
+                echo "Testing if the application is running on ${APP_ENDPOINT}..."
+
+                sleep(20)
+
+                script {
+                    def response = sh(script: "curl -s -o /dev/null -w '%{http_code}' ${APP_ENDPOINT}", returnStdout: true).trim()
+                    if (response == '200') {
+                        echo 'Application is running and responded with HTTP 200 OK!'
+                    } else {
+                        error "Application test failed! Endpoint responded with HTTP ${response}"
+                    }
+                }
+            }
+        }
     }
 
     post {
         always {
             echo 'Pipeline completed. Checking Docker containers and ECS services...'
-            sh 'sudo docker ps -a || true'
+             withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS}"]]) {
             sh 'aws ecs list-services --cluster ${ECS_CLUSTER_NAME} || true'
+             }
         }
     }
 }
