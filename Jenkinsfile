@@ -5,14 +5,14 @@ pipeline {
         AWS_CREDENTIALS = 'aws-credentials' 
         AWS_ACCOUNT_ID = '684361860346' 
         AWS_REGION = 'eu-west-2'
-        ECR_REPO_NAME = 'cap-demo-app'
+        ECR_REPO_NAME = 'cap-gem-app-test'
         DOCKER_IMAGE = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
         DOCKER_TAG = 'latest'
         PORT = 8085
         APP_DIR = 'aspnet-core-dotnet-core'
-        ECS_CLUSTER_NAME = 'demo-app-cluster'
-        ECS_SERVICE_NAME = 'demo-app-service'
-        ECS_TASK_DEFINITION = 'demo-app-task'
+        ECS_CLUSTER_NAME = 'app-cluster-test'
+        ECS_SERVICE_NAME = 'app-service-test'
+        ECS_TASK_DEFINITION = 'app-task-test'
         APP_ENDPOINT = "http://demo-app-alb-173668491.eu-west-2.elb.amazonaws.com"
     }
 
