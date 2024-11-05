@@ -57,7 +57,7 @@ pipeline {
     post {
         always {
             echo 'Pipeline completed. The Docker container is running.'
-            # sh 'sudo docker ps -a' 
+            sh 'sudo docker ps -a' 
         }
     }
 }
