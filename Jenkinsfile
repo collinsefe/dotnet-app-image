@@ -82,7 +82,7 @@ pipeline {
                 sleep(20)  
 
                 script {
-                    def response = sh(script: "curl -s -o /test/null -w '%{http_code}' ${APP_ENDPOINT}", returnStdout: true).trim()
+                    def response = sh(script: "curl -s -o /dev/null -w '%{http_code}' ${APP_ENDPOINT}", returnStdout: true).trim()
                     if (response == '200') {
                         echo 'Application is running and responded with HTTP 200 OK!'
                     } else {
