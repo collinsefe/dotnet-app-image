@@ -7,7 +7,7 @@ pipeline {
         AWS_REGION = 'eu-west-2'
         ECR_REPO_NAME = 'cap-gem-app-test'
         DOCKER_IMAGE = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
-        DOCKER_TAG = 'latest'
+        DOCKER_TAG = 'test'
         APP_DIR = 'aspnet-core-dotnet-core'
         ECS_CLUSTER_NAME = 'app-cluster-test'
         ECS_SERVICE_NAME = 'app-service-test'
