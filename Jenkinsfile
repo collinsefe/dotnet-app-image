@@ -8,7 +8,6 @@ pipeline {
         ECR_REPO_NAME = 'cap-gem-app-dev'
         DOCKER_IMAGE = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
         DOCKER_TAG = 'latest'
-        PORT = 8084
         APP_DIR = 'aspnet-core-dotnet-core'
         ECS_CLUSTER_NAME = 'app-cluster-dev'
         ECS_SERVICE_NAME = 'app-service-dev'
@@ -92,23 +91,6 @@ pipeline {
                 }
             }
         }
-
-        // stage('Verify Monitoring') {
-        //     steps {
-        //         script {
-        //             echo 'Verifying CloudWatch Logs...'
-        //             sh "aws logs describe-log-groups --log-group-name-prefix /ecs/${ECS_SERVICE_NAME}"
-
-        //             echo 'Checking ECS Service Metrics...'
-        //             sh """
-        //                 aws cloudwatch get-metric-statistics --metric-name CPUUtilization \
-        //                 --namespace AWS/ECS --period 60 --statistics Average \
-        //                 --dimensions Name=ServiceName,Value=${ECS_SERVICE_NAME} Name=ClusterName,Value=${ECS_CLUSTER_NAME} \
-        //                 --start-time \$(date -u -d '10 minutes ago' +%Y-%m-%dT%H:%M:%SZ) --end-time \$(date -u +%Y-%m-%dT%H:%M:%SZ)
-        //             """
-        //         }
-        //     }
-        // }
     }
 
     post {
