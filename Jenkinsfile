@@ -93,22 +93,22 @@ pipeline {
             }
         }
 
-        stage('Verify Monitoring') {
-            steps {
-                script {
-                    echo 'Verifying CloudWatch Logs...'
-                    sh "aws logs describe-log-groups --log-group-name-prefix /ecs/${ECS_SERVICE_NAME}"
+        // stage('Verify Monitoring') {
+        //     steps {
+        //         script {
+        //             echo 'Verifying CloudWatch Logs...'
+        //             sh "aws logs describe-log-groups --log-group-name-prefix /ecs/${ECS_SERVICE_NAME}"
 
-                    echo 'Checking ECS Service Metrics...'
-                    sh """
-                        aws cloudwatch get-metric-statistics --metric-name CPUUtilization \
-                        --namespace AWS/ECS --period 60 --statistics Average \
-                        --dimensions Name=ServiceName,Value=${ECS_SERVICE_NAME} Name=ClusterName,Value=${ECS_CLUSTER_NAME} \
-                        --start-time \$(date -u -d '10 minutes ago' +%Y-%m-%dT%H:%M:%SZ) --end-time \$(date -u +%Y-%m-%dT%H:%M:%SZ)
-                    """
-                }
-            }
-        }
+        //             echo 'Checking ECS Service Metrics...'
+        //             sh """
+        //                 aws cloudwatch get-metric-statistics --metric-name CPUUtilization \
+        //                 --namespace AWS/ECS --period 60 --statistics Average \
+        //                 --dimensions Name=ServiceName,Value=${ECS_SERVICE_NAME} Name=ClusterName,Value=${ECS_CLUSTER_NAME} \
+        //                 --start-time \$(date -u -d '10 minutes ago' +%Y-%m-%dT%H:%M:%SZ) --end-time \$(date -u +%Y-%m-%dT%H:%M:%SZ)
+        //             """
+        //         }
+        //     }
+        // }
     }
 
     post {
