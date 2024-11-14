@@ -12,7 +12,7 @@ pipeline {
         ECS_CLUSTER_NAME = 'app-cluster-test'
         ECS_SERVICE_NAME = 'app-service-test'
         ECS_TASK_DEFINITION = 'app-task-family-test' 
-        APP_ENDPOINT = "app-alb-test-361643055.eu-west-2.elb.amazonaws.com"
+        APP_ENDPOINT = "app-alb-test-635207156.eu-west-2.elb.amazonaws.com"
         CONTAINER_NAME = "app-task-test"
     }
 
